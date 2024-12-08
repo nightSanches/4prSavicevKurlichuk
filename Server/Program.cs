@@ -81,7 +81,7 @@ namespace Server
                     byte[] Bytes = new byte[10485760];
                     int BytesRec = Handler.Receive(Bytes);
                     Data += Encoding.UTF8.GetString(Bytes, 0, BytesRec);
-                    Console.Write("Сообщение от пользователя: " + Data + "\n");
+                    if(Data != "") Console.Write("Сообщение от пользователя: " + Data + "\n");
                     string Reply = "";
                     Common.ViewModelSend ViewModelSend = JsonConvert.DeserializeObject<Common.ViewModelSend>(Data);
                     if (ViewModelSend != null)
@@ -164,8 +164,7 @@ namespace Server
                             if (ViewModelSend.Id != -1)
                             {
                                 FileInfoFTP SendFileInfo = JsonConvert.DeserializeObject<FileInfoFTP>(ViewModelSend.Message);
-                                string desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-                                File.WriteAllBytes(Path.Combine(desktopPath, SendFileInfo.Name), SendFileInfo.Data);
+                                File.WriteAllBytes(Users[ViewModelSend.Id].temp_src + @"\" + SendFileInfo.Name, SendFileInfo.Data);
                                 viewModelMessage = new Common.ViewModelMessage("message", "Файл загружен");
                             }
                             else
