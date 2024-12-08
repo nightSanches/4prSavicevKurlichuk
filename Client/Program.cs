@@ -16,7 +16,19 @@ namespace Client
         public static int Id = -1;
         static void Main(string[] args)
         {
-
+            Console.Write("Введите IP аддрес: ");
+            string sIpAddress = Console.ReadLine();
+            Console.Write("Введите порт: ");
+            string sPort = Console.ReadLine();
+            if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAddress, out IPAddress))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Данные успешно введены. Подключаюсь к Серверу.");
+                while (true)
+                {
+                    ConnectServer();
+                }
+            }
         }
 
         public static bool CheckCommand(string message)
@@ -40,7 +52,7 @@ namespace Client
                         // Меняем цвет текста в командной строке
                         Console.ForegroundColor = ConsoleColor.Red;
                         // Выводим текст
-                        Console.WriteLine("Использование: connect [login] [password]\nПример: connect User1 P@ssword");
+                        Console.WriteLine("Использование: connect [login] [password]\nПример: connect User1 Password");
                         // Говорим что команда не верная
                         BCommand = false;
                     }
