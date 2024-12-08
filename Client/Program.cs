@@ -10,7 +10,7 @@ namespace Client
         public static int Id = -1;
         static void Main(string[] args)
         {
-           
+
         }
 
         public static bool CheckCommand(string message)
@@ -18,7 +18,7 @@ namespace Client
             // Создаёи переменную говорящую о том, что команда неверная
             bool BCommand = false;
             // Разбиваем сообщение пользователя на массив
-            string[] DataMessage = message.Split(new string[1] {" "}, StringSplitoptions.None);
+            string[] DataMessage = message.Split(new string[1] { " " }, StringSplitOptions.None);
             // Если длина данных больше 0
             if (DataMessage.Length > 0)
             {
@@ -42,55 +42,56 @@ namespace Client
                         // Если всё правильно, команда верная
                         BCommand = true;
                 }
-
-
-
-
-                
-
-
-// Если команда на переход по директориям
-else if (Command
-==
-"cd")
+                // Если команда на переход по директориям
+                else if (Command == "cd")
                     // Команда верная
                     BCommand = true;
+
                 // Если команда получения файла
-                else if (Command
+                else if (Command == "get")
                 {
-                    "get")
-// Если длина сообщения более одного
-if (DataMessage.Length == 1)
+                    // Если длина сообщения более одного
+                    if (DataMessage.Length == 1)
                     {
-                    }
-                    else
                         // Меняем цвет текста в командной строке
                         Console.ForegroundColor = ConsoleColor.Red;
-                    // Выводим текст
-                    Console.WriteLine("Использование: get [NameFile]\nПример: get Test.txt");
-                    // Говорим что команда не верная
-                    BCommand = false;
-                    // Команда верная
-                    BCommand = true;
+                        // Выводим текст
+                        Console.WriteLine("Использование: get [NameFile]\nПример: get Test.txt");
+                        // Говорим что команда не верная
+                        BCommand = false;
+                    }
+                    else
+                        // Команда верная
+                        BCommand = true;
                 }
                 // Если команда отправки файла
-                else if (Command
-}
-==
-"set") {
-                // Если длина сообщения более одного
-                if (DataMessage.Length == 1)
+                else if (Command == "set")
                 {
-                }
-                else
-                    // Меняем цвет текста в командной строке
-                    Console.ForegroundColor = ConsoleColor.Red;
-                // Выводим текст
-                Console.WriteLine("Использование: set [NameFile]\nПример: set Test.txt");
-                // Говорим что команда не верная
-                BCommand = false;
-                // Команда верная
-                BCommand = true;
-                return BCommand;
+                    // Если длина сообщения более одного
+                    if (DataMessage.Length == 1)
+                    {
+                        // Меняем цвет текста в командной строке
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        // Выводим текст
+                        Console.WriteLine("Использование: set [NameFile]\nПример: set Test.txt");
+                        // Говорим что команда не верная
+                        BCommand = false;
+                    }
+                    else
+                        // Команда верная
+                        BCommand = true;
+
+                }            
             }
+            return BCommand;
+        }
+
+
+
+
+
+
+    }
 }
+                    
+
