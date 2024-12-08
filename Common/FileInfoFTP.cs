@@ -13,7 +13,7 @@ namespace Common
         public FileInfoFTP(byte[] Data, string Name)
         {
             this.Data = Data;
-            this.Name = Name;
+            this.Name = Name; 
         }
     }
 }
