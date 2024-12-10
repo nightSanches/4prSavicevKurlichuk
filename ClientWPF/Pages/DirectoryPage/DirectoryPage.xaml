@@ -9,6 +9,22 @@
       Title="DirectoryPage">
 
     <Grid>
-        
+        <Grid VerticalAlignment="Top" Margin="10,10,10,0" Background="#20000000">
+
+            <Border CornerRadius="5" Background="#FF007ACC" Margin="10,5,0,5" Height="35" Width="120" HorizontalAlignment="Left">
+                <Button x:Name="downloadBtn" Content="Загрузить"
+                FontSize="14" 
+                Background= "Transparent"
+                Foreground="White" 
+                BorderThickness="0"
+                Click="Download"
+                Cursor="Hand"/>
+            </Border>
+        </Grid>
+        <Grid Margin="10,78,10,10" Background="#20000000">
+            <ScrollViewer >
+                <StackPanel x:Name="stackPanelDirectories" Orientation="Vertical"></StackPanel>
+            </ScrollViewer>
+        </Grid>
     </Grid>
 </Page>

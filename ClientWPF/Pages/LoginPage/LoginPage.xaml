@@ -7,8 +7,71 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="LoginPage">
+    <Page.Resources>
+        <Style TargetType="Label">
+            <Setter Property="FontFamily" Value="Franklin Gothic Medium"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Foreground" Value="#333333"/>
+            <Setter Property="Margin" Value="0,0,0,5"/>
+        </Style>
+
+        <Style TargetType="TextBox">
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#cccccc"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="MinHeight" Value="30"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}" 
+                            BorderBrush="{TemplateBinding BorderBrush}" 
+                            BorderThickness="{TemplateBinding BorderThickness}" 
+                            CornerRadius="2">
+                            <ScrollViewer x:Name="PART_ContentHost"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
 
     <Grid>
-        
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="350"></ColumnDefinition>
+            <ColumnDefinition></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Border CornerRadius="20" Grid.Column="1" Margin="30" Background="#20000000">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" Color="LightGray">
+                </DropShadowEffect>
+            </Border.Effect>
+            <Grid>
+                <Label Height="30" VerticalAlignment="Top" Margin="64,10,64,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Content="Логин"/>
+                <TextBox x:Name="tbLogin" Width="224" Height="20" VerticalAlignment="Top" Margin="0,40,0,0" HorizontalAlignment="Center"></TextBox>
+                <Label Height="30" VerticalAlignment="Top" Margin="64,75,64,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Content="Пароль"/>
+                <TextBox x:Name="tbPassword" Width="224" Height="20" VerticalAlignment="Top" Margin="0,105,0,0"  HorizontalAlignment="Center"></TextBox>
+
+                <Label Height="30" VerticalAlignment="Top" Margin="80,140,80,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Content="IP"/>
+                <TextBox x:Name="tbIp" Width="224" Height="20" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,170,0,0"/>
+                <Label Height="30" VerticalAlignment="Top" Margin="64,212,64,0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Content="Port"/>
+                <TextBox x:Name="tbPort" Width="224" Height="20" VerticalAlignment="Top" Margin="0,242,0,0"  HorizontalAlignment="Center"></TextBox>
+
+
+                <Border CornerRadius="5" Background="#FF007ACC" Margin="80,294,80,0" Height="50" Width="130" VerticalAlignment="Top">
+                    <Button Content="Подключиться"
+                    FontSize="14" 
+                    Background= "Transparent"
+                    Foreground="White" 
+                    BorderThickness="0"
+                    Click="AuthClick"
+                    Cursor="Hand"/>
+                </Border>
+
+            </Grid>
+        </Border>
     </Grid>
 </Page>
