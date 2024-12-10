@@ -104,5 +104,11 @@
     <Folder Include="Pages\DirectoryPage\Item\" />
     <Folder Include="Pages\LoginPage\" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{c28a1406-0f10-4f14-99ce-9d2b2f9db68a}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
