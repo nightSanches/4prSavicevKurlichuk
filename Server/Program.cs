@@ -1,7 +1,9 @@
 ﻿using Common;
+using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -16,45 +18,51 @@ namespace Server
         public static List<User> Users = new List<User>();
         public static IPAddress IpAddress;
         public static int Port;
-        static void Main(string[] args)
+
+        private static string connectionString = "Server=localhost;port=3306;Database=practic4;uid=root;pwd=;";
+        public static bool AuthenticateUser(string login, string password)
         {
-            Users.Add(new User("admin", "admin", @"C:\"));
-            Console.Write("Введите IP адрес сервера: ");
-            string sIpAddress = Console.ReadLine();
-            Console.Write("Введите порт: ");
-            string sPort = Console.ReadLine();
-            if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIpAddress, out IpAddress))
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Данные успешно введены. Запускаю сервер.");
-                StartServer();
+                conn.Open();
+                string query = "SELECT COUNT(*) FROM users WHERE login = @login AND password = @password";
+                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("@login", login);
+                    cmd.Parameters.AddWithValue("@password", password);
+                    int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    return count > 0;
+                }
             }
-            Console.Read();
         }
 
-        public static bool AutorizationUser(string login, string password)
+        public static bool AutorizationUser(string login, string password, out int userId)
         {
-            User user = null;
-            user = Users.Find(x => x.login == login && x.password == password);
-            return user != null;
+            userId = -1;
+            User user = Users.Find(x => x.login == login && x.password == password);
+            if (user != null)
+            {
+                userId = user.id;
+                return true;
+            }
+            return false;
         }
+
 
         public static List<string> GetDirectory(string src)
         {
             List<string> FoldersFiles = new List<string>();
-            if(Directory.Exists(src))
+            if (Directory.Exists(src))
             {
                 string[] dirs = Directory.GetDirectories(src);
-                foreach(string dir in dirs)
+                foreach (string dir in dirs)
                 {
-                    string NameDirectory = dir.Replace(src, "");
-                    FoldersFiles.Add(NameDirectory + "/");
+                    FoldersFiles.Add(dir + "\\");
                 }
                 string[] files = Directory.GetFiles(src);
-                foreach(string file in files)
+                foreach (string file in files)
                 {
-                    string NameFile = file.Replace(src, "");
-                    FoldersFiles.Add(NameFile);
+                    FoldersFiles.Add(file);
                 }
             }
             return FoldersFiles;
@@ -77,110 +85,202 @@ namespace Server
                 try
                 {
                     Socket Handler = sListener.Accept();
-                    string Data = null;
-                    byte[] Bytes = new byte[10485760];
-                    int BytesRec = Handler.Receive(Bytes);
-                    Data += Encoding.UTF8.GetString(Bytes, 0, BytesRec);
-                    if(Data != "") Console.Write("Сообщение от пользователя: " + Data + "\n");
-                    string Reply = "";
-                    Common.ViewModelSend ViewModelSend = JsonConvert.DeserializeObject<Common.ViewModelSend>(Data);
-                    if (ViewModelSend != null)
-                    {
-                        Common.ViewModelMessage viewModelMessage;
-                        string[] DataCommand = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
-                        if (DataCommand[0] == "connect")
-                        {
-                            string[] DataMessage = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
-                            if (AutorizationUser(DataMessage[1], DataMessage[2]))
-                            {
-                                int IdUser = Users.FindIndex(x => x.login == DataMessage[1] && x.password == DataMessage[2]);
-                                viewModelMessage = new Common.ViewModelMessage("authorization", IdUser.ToString());
-                            }
-                            else
-                            {
-                                viewModelMessage = new Common.ViewModelMessage("message", "Не правильный логин и пароль пользователя");
-                            }
-                            Reply = JsonConvert.SerializeObject(viewModelMessage);
-                            byte[] message = Encoding.UTF8.GetBytes(Reply);
-                            Handler.Send(message);
-                        }
-                        else if (DataCommand[0] == "cd")
-                        {
-                            if (ViewModelSend.Id != -1)
-                            {
-                                string[] DataMessage = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
-                                List<string> FoldersFiles = new List<string>();
-                                if (DataMessage.Length == 1)
-                                {
-                                    Users[ViewModelSend.Id].temp_src = Users[ViewModelSend.Id].src;
-                                    FoldersFiles = GetDirectory(Users[ViewModelSend.Id].src);
-                                }
-                                else
-                                {
-                                    string cdFolder = "";
-                                    for (int i = 1; i < DataMessage.Length; i++)
-                                    {
-                                        if (cdFolder == "")
-                                            cdFolder += DataMessage[i];
-                                        else
-                                            cdFolder += " " + DataMessage[i];
-                                    }
-                                    Users[ViewModelSend.Id].temp_src = Users[ViewModelSend.Id].temp_src + cdFolder;
-                                    FoldersFiles = GetDirectory(Users[ViewModelSend.Id].temp_src);
-                                }
-                                if (FoldersFiles.Count == 0)
-                                    viewModelMessage = new Common.ViewModelMessage("message", "Директория пуста или не существует.");
-                                else
-                                    viewModelMessage = new Common.ViewModelMessage("cd", JsonConvert.SerializeObject(FoldersFiles));
-                            }
-                            else
-                                viewModelMessage = new Common.ViewModelMessage("message", "Необходимо авторизоваться");
-                            Reply = JsonConvert.SerializeObject(viewModelMessage);
-                            byte[] message = Encoding.UTF8.GetBytes(Reply);
-                            Handler.Send(message);
-                        }
-                        else if (DataCommand[0] == "get")
-                        {
-                            if (ViewModelSend.Id != -1)
-                            {
-                                string[] DataMessage = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
-                                string getFile = "";
-                                for (int i = 1; i < DataMessage.Length; i++)
-                                    if (getFile == "")
-                                        getFile += DataMessage[i];
-                                    else
-                                        getFile += " " + DataMessage[i];
-                                byte[] byteFile = File.ReadAllBytes(Users[ViewModelSend.Id].temp_src + getFile);
-                                viewModelMessage = new Common.ViewModelMessage("file", JsonConvert.SerializeObject(byteFile));
-                            }
-                            else
-                                viewModelMessage = new Common.ViewModelMessage("message", "Необходимо авторизоваться");
-                            Reply = JsonConvert.SerializeObject(viewModelMessage);
-                            byte[] message = Encoding.UTF8.GetBytes(Reply);
-                            Handler.Send(message);
-                        }
-                        else
-                        {
-                            if (ViewModelSend.Id != -1)
-                            {
-                                FileInfoFTP SendFileInfo = JsonConvert.DeserializeObject<FileInfoFTP>(ViewModelSend.Message);
-                                File.WriteAllBytes(Users[ViewModelSend.Id].temp_src + @"\" + SendFileInfo.Name, SendFileInfo.Data);
-                                viewModelMessage = new Common.ViewModelMessage("message", "Файл загружен");
-                            }
-                            else
-                                viewModelMessage = new ViewModelMessage("message", "Необходимо авторизоваться");
-                            Reply = JsonConvert.SerializeObject(viewModelMessage);
-                            byte[] message = Encoding.UTF8.GetBytes(Reply);
-                            Handler.Send(message);
-                        }
-                    }
+                    Task.Run(() => HandleClient(Handler));
                 }
                 catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Что-то случилось: " + ex.Message);
+                    Console.WriteLine("Ошибка при принятии соединения: " + ex.Message);
                 }
             }
+        }
+
+        private static void HandleClient(Socket Handler)
+        {
+            try
+            {
+                string Data = null;
+                byte[] Bytes = new byte[10485760];
+                int BytesRec = Handler.Receive(Bytes);
+                Data += Encoding.UTF8.GetString(Bytes, 0, BytesRec);
+                Console.Write("Сообщение от пользователя: " + Data + "\n");
+                string Reply = "";
+                ViewModelSend ViewModelSend = JsonConvert.DeserializeObject<ViewModelSend>(Data);
+                if (ViewModelSend != null)
+                {
+                    ViewModelMessage viewModelMessage;
+                    string[] DataCommand = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
+                    if (DataCommand[0] == "connect")
+                    {
+                        string[] DataMessage = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
+                        if (AutorizationUser(DataMessage[1], DataMessage[2], out int userId))
+                        {
+                            userId = Users.Find(x => x.login == DataMessage[1] && x.password == DataMessage[2]).id;
+                            viewModelMessage = new ViewModelMessage("autorization", userId.ToString());
+                            string username = Users.Find(x => x.login == DataMessage[1] && x.password == DataMessage[2]).login;
+                            string password = Users.Find(x => x.login == DataMessage[1] && x.password == DataMessage[2]).password;
+                            LogCommandToDatabase(userId, ViewModelSend.Message.Split(' ')[0]);
+                        }
+                        else
+                        {
+                            viewModelMessage = new ViewModelMessage("message", "Не правильный логин и пароль пользователя.");
+                        }
+                        Reply = JsonConvert.SerializeObject(viewModelMessage);
+                        byte[] message = Encoding.UTF8.GetBytes(Reply);
+                        Handler.Send(message);
+                    }
+                    else if (DataCommand[0] == "cd")
+                    {
+                        if (ViewModelSend.Id != -1)
+                        {
+                            string[] DataMessage = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
+                            List<string> FoldersFiles = new List<string>();
+                            if (DataMessage.Length == 1)
+                            {
+                                Users[ViewModelSend.Id - 1].temp_src = Users[ViewModelSend.Id - 1].src;
+                                FoldersFiles = GetDirectory(Users[ViewModelSend.Id - 1].src);
+                            }
+                            else
+                            {
+                                string cdFolder = string.Join(" ", DataMessage.Skip(1));
+                                Users[ViewModelSend.Id - 1].temp_src = Path.Combine(Users[ViewModelSend.Id - 1].temp_src, cdFolder);
+                                FoldersFiles = GetDirectory(Users[ViewModelSend.Id - 1].temp_src);
+                            }
+                            if (FoldersFiles.Count == 0)
+                            {
+                                viewModelMessage = new ViewModelMessage("message", "Директория пуста или не существует.");
+                            }
+                            else
+                            {
+                                viewModelMessage = new ViewModelMessage("cd", JsonConvert.SerializeObject(FoldersFiles));
+                            }
+                        }
+                        else
+                        {
+                            viewModelMessage = new ViewModelMessage("message", "Необходимо авторизоваться");
+                        }
+                        Reply = JsonConvert.SerializeObject(viewModelMessage);
+                        byte[] message = Encoding.UTF8.GetBytes(Reply);
+                        Handler.Send(message);
+                    }
+                    else if (DataCommand[0] == "get")
+                    {
+                        if (ViewModelSend.Id != -1)
+                        {
+                            string[] DataMessage = ViewModelSend.Message.Split(new string[1] { " " }, StringSplitOptions.None);
+                            string getFile = string.Join(" ", DataMessage.Skip(1));
+                            string fullFilePath = Path.Combine(Users[ViewModelSend.Id - 1].temp_src, getFile);
+                            Console.WriteLine($"Trying to access file: {fullFilePath}");
+                            if (File.Exists(fullFilePath))
+                            {
+                                byte[] byteFile = File.ReadAllBytes(fullFilePath);
+                                viewModelMessage = new ViewModelMessage("file", JsonConvert.SerializeObject(byteFile));
+                                string username = Users[ViewModelSend.Id - 1].login;
+                                string password = Users[ViewModelSend.Id - 1].password;
+                                var userId = Users.Find(x => x.login == username && x.password == password).id;
+                                LogCommandToDatabase(userId, "get");
+                            }
+                            else
+                            {
+                                viewModelMessage = new ViewModelMessage("message", "Файл не найден.");
+                            }
+                        }
+                        else
+                        {
+                            viewModelMessage = new ViewModelMessage("message", "Необходимо авторизоваться");
+                        }
+                        Reply = JsonConvert.SerializeObject(viewModelMessage);
+                        byte[] message = Encoding.UTF8.GetBytes(Reply);
+                        Handler.Send(message);
+                    }
+                    else
+                    {
+                        if (ViewModelSend.Id != -1)
+                        {
+                            FileInfoFTP SendFileInfo = JsonConvert.DeserializeObject<FileInfoFTP>(ViewModelSend.Message);
+                            string savePath = Path.Combine(Users[ViewModelSend.Id - 1].temp_src, SendFileInfo.Name);
+                            File.WriteAllBytes(savePath, SendFileInfo.Data);
+                            viewModelMessage = new ViewModelMessage("message", "Файл загружен");
+                            string username = Users[ViewModelSend.Id - 1].login;
+                            string password = Users[ViewModelSend.Id - 1].password;
+                            var userId = Users.Find(x => x.login == username && x.password == password).id;
+                            LogCommandToDatabase(userId, "set");
+                        }
+                        else
+                        {
+                            viewModelMessage = new ViewModelMessage("message", "Необходимо авторизоваться");
+                        }
+                        Reply = JsonConvert.SerializeObject(viewModelMessage);
+                        byte[] message = Encoding.UTF8.GetBytes(Reply);
+                        Handler.Send(message);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Ошибка при обработке клиента: " + ex.Message);
+            }
+            finally
+            {
+                Handler.Shutdown(SocketShutdown.Both);
+                Handler.Close();
+            }
+        }
+
+        private static void LogCommandToDatabase(int userId, string command)
+        {
+            string connectionString = "Server=localhost;port=3306;Database=practic4;uid=root;pwd=;";
+
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "INSERT INTO usersCommand (id, datetime, command) VALUES (@id, @datetime, @command)";
+                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("id", userId);
+                    cmd.Parameters.AddWithValue("@datetime", DateTime.Now);
+                    cmd.Parameters.AddWithValue("@command", command);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+        private static void LoadUsersFromDatabase()
+        {
+            using (MySqlConnection conn = new MySqlConnection(connectionString))
+            {
+                conn.Open();
+                string query = "SELECT id, login, password, src FROM users";
+                using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                {
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            int id = reader.GetInt32("id");
+                            string login = reader["login"].ToString();
+                            string password = reader["password"].ToString();
+                            string src = reader["src"].ToString();
+                            Users.Add(new User(id, login, password, src));
+                        }
+                    }
+                }
+            }
+        }
+        static void Main(string[] args)
+        {
+            LoadUsersFromDatabase();
+            Console.Write("Введите IP адрес сервера: ");
+            string sIdAddress = Console.ReadLine();
+            Console.Write("Введите порт: ");
+            string sPort = Console.ReadLine();
+            if (int.TryParse(sPort, out Port) && IPAddress.TryParse(sIdAddress, out IpAddress))
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Данные успешно введены. Запускаю сервер.");
+                StartServer();
+            }
+            Console.Read();
         }
     }
 }

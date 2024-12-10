@@ -71,12 +71,12 @@ namespace ClientWPF.Pages.DirectoryPage.Item
                 {
                     var items = JsonConvert.DeserializeObject<List<string>>(response.Date);
                     DirectoryPage.init.stackPanelDirectories.Children.Clear();
-                    var directoryItem = new DirectoryItem("Назад", false);
+                    var directoryItem = new Item("Назад", false);
                     DirectoryPage.init.stackPanelDirectories.Children.Add(directoryItem);
                     foreach (var item in items)
                     {
                         bool isDirectory = Directory.Exists(item);
-                        var Item = new DirectoryItem(item, isDirectory);
+                        var Item = new Item(item, isDirectory);
                         DirectoryPage.init.stackPanelDirectories.Children.Add(Item);
                     }
                 }
